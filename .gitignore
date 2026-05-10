@@ -1,0 +1,23 @@
+# Cache de radioid
+radioid_cache.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Entorno virtual
+oled-env/
+venv/
+.venv/
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.log
