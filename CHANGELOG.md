@@ -1,3 +1,14 @@
+## [3.1.0] - 2026-05-10
+
+### Añadido
+- Soporte para pantalla SH1107 1.5" 128×128 (Hailege y similares)
+- Variable `DISPLAY_TYPE` para seleccionar entre SSD1306 y SH1107
+- Variable `DISPLAY_ADDR` para configurar dirección I2C (0x3C o 0x3D)
+- Layout rediseñado para SH1107 con fuentes más grandes y más información visible
+- Script de instalación pregunta automáticamente qué pantalla tiene el usuario
+
+---
+
 # Changelog
 
 ## [3.0.0] - 2026-05-10

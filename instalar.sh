@@ -122,6 +122,30 @@ else
     [[ "$cont" =~ ^[Ss]$ ]] || exit 1
 fi
 
+# ── 9b. TIPO DE PANTALLA ─────────────────────────────────────
+info "Configurando tipo de pantalla..."
+echo "¿Qué modelo de pantalla OLED tienes?"
+echo "  1) SSD1306 - 0.96\" 128x64  (la más común, 4 pines)"
+echo "  2) SH1107  - 1.5\"  128x128 (Hailege y similares, 4 pines)"
+read -p "Elige [1/2]: " display_opt
+case $display_opt in
+    2)
+        DISPLAY_TYPE="SH1107"
+        ok "Pantalla: SH1107 128x128"
+        # Instalar librería SH1107
+        source ~/oled-env/bin/activate
+        pip install adafruit-circuitpython-sh1107 -q
+        ok "Librería SH1107 instalada"
+        ;;
+    *)
+        DISPLAY_TYPE="SSD1306"
+        ok "Pantalla: SSD1306 128x64"
+        ;;
+esac
+
+DISPLAY_ADDR=0x3C
+ok "Dirección I2C: $DISPLAY_ADDR (por defecto)"
+
 # ── 10. DESCARGAR Y CONFIGURAR SCRIPT ─────────────────────────
 info "Descargando tetra_oled.py desde GitHub..."
 curl -sSL "${REPO}/tetra_oled.py" -o ~/tetra_oled.py
@@ -131,6 +155,8 @@ sed -i "s|SERVICE_NAME         = \"tmo.service\"|SERVICE_NAME         = \"${SERV
 sed -i "s|DATA_MODE            = \"monitor\"|DATA_MODE            = \"${DATA_MODE}\"|" ~/tetra_oled.py
 sed -i "s|MONITOR_URL          = \"http://localhost:5000\"|MONITOR_URL          = \"${MONITOR_URL}\"|" ~/tetra_oled.py
 sed -i "s|LOCAL_ISSI           = \"0\"|LOCAL_ISSI           = \"${LOCAL_ISSI}\"|" ~/tetra_oled.py
+sed -i "s|DISPLAY_TYPE         = \"SSD1306\"|DISPLAY_TYPE         = \"${DISPLAY_TYPE}\"|" ~/tetra_oled.py
+sed -i "s|DISPLAY_ADDR         = 0x3C|DISPLAY_ADDR         = ${DISPLAY_ADDR}|" ~/tetra_oled.py
 ok "Script configurado"
 
 # ── 11. SERVICIO SYSTEMD ──────────────────────────────────────
@@ -170,6 +196,7 @@ echo "  Servicio TETRA: $SERVICE_NAME"
 echo "  Modo datos    : $DATA_MODE"
 [ "$DATA_MODE" = "monitor" ] && echo "  Monitor URL   : $MONITOR_URL"
 echo "  ISSI local    : $LOCAL_ISSI"
+echo "  Pantalla      : $DISPLAY_TYPE ($DISPLAY_ADDR)"
 echo "  Script        : ~/tetra_oled.py"
 echo ""
 echo "  Comandos útiles:"

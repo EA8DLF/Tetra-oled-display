@@ -27,7 +27,7 @@ El script de instalación guía paso a paso y configura todo automáticamente.
 | Componente | Descripción |
 |---|---|
 | Raspberry Pi | Modelos 3, 4 o 5 con Raspberry Pi OS 64-bit |
-| Pantalla OLED | SSD1306 0.96" 128×64 I2C (4 pines) |
+| Pantalla OLED | SSD1306 0.96" 128×64 I2C **o** SH1107 1.5" 128×128 I2C (4 pines) |
 | Cables | 4 jumpers hembra-hembra |
 
 ### Software
@@ -234,3 +234,71 @@ Puedes usarlo, modificarlo y distribuirlo libremente citando al autor.
 ---
 
 *Compatible con tetra-bluestation · MidnightBlueLabs*
+
+---
+
+## English Summary
+
+**TETRA OLED Display** is a real-time monitoring system for TETRA radio networks, designed to run on a Raspberry Pi with an SSD1306 or SH1107 OLED display. It shows who is transmitting, their callsign, name, province, call type, TalkGroup, and SDS messages — both local and network-wide.
+
+### Quick Install
+
+```bash
+bash <(curl -sSL https://raw.githubusercontent.com/EA8DLF/Tetra-oled-display/main/instalar.sh)
+```
+
+### Compatible Displays
+
+| Model | Size | Resolution |
+|---|---|---|
+| SSD1306 | 0.96" | 128×64 |
+| SH1107 | 1.5" | 128×128 |
+
+### Wiring (all Raspberry Pi models with 40-pin GPIO)
+
+| Display pin | Raspberry Pi pin | Description |
+|---|---|---|
+| VCC | Pin 1 (3.3V) | Power |
+| GND | Pin 9 (any GND) | Ground |
+| SDA | Pin 3 (GPIO2) | I2C Data — required |
+| SCL | Pin 5 (GPIO3) | I2C Clock — required |
+
+### Operating Modes
+
+- **`monitor`** — reads logs from TetraPack Monitor dashboard (port 5000)
+- **`journalctl`** — reads logs directly from the systemd service, no dashboard required
+
+### Key Configuration (`tetra_oled.py`)
+
+```python
+SERVICE_NAME  = "tmo.service"   # your bluestation systemd service name
+DATA_MODE     = "monitor"       # "monitor" or "journalctl"
+MONITOR_URL   = "http://localhost:5000"
+DISPLAY_TYPE  = "SSD1306"       # "SSD1306" or "SH1107"
+LOCAL_ISSI    = "0"             # your local terminal ISSI (for TG priority)
+```
+
+### Features
+
+- ✅ Local voice calls (group and private)
+- ✅ Network voice calls in real time (other users)
+- ✅ Local and network SDS messages
+- ✅ Smart TG priority (selected TG is not replaced by lower priority calls)
+- ✅ Callsigns and names from [radioid.net](https://radioid.net) (auto-updated daily)
+- ✅ Automatic local time based on geolocation
+- ✅ Temperature, voltage and IP on standby screen
+- ✅ Anti-burn protection: smooth pixel shift + auto power-off after 5 min
+- ✅ systemd service with auto-start on boot
+- ✅ Works with or without TetraPack Monitor
+
+### Troubleshooting
+
+**Screen not detected** — run `i2cdetect -y 1`. Should show `3c`. If not, try powering from Pin 2 (5V).
+
+**SH1107 not responding** — some units use address `0x3D`. Check with `i2cdetect -y 1` and set `DISPLAY_ADDR = 0x3D` in `tetra_oled.py`.
+
+**No callsigns shown** — radioid.net database downloads on first start (may take 1-2 min). Requires internet access.
+
+### License
+
+MIT License — free to use, modify and distribute with attribution.

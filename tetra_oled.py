@@ -1,18 +1,27 @@
 #!/usr/bin/env python3
 # ═══════════════════════════════════════════════════════════════
-#  TETRA OLED Display v3
+#  TETRA OLED Display v3.1
 #  Jose Maria - EA8DLF · 2026
-#  https://github.com/EA8DLF/tetra-oled-display
+#  https://github.com/EA8DLF/Tetra-oled-display
+#  Compatible con SSD1306 (128x64) y SH1107 (128x128)
 # ═══════════════════════════════════════════════════════════════
 
 import re, json, time, requests, threading, os, csv, signal, sys, random, math, subprocess, socket
 from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
-import board, busio, adafruit_ssd1306, pytz
+import board, busio, pytz
 
 # ─── CONFIGURACIÓN ────────────────────────────────────────────
 # Nombre del servicio systemd de tu bluestation
 SERVICE_NAME         = "tmo.service"
+
+# Tipo de pantalla:
+#   "SSD1306" → pantalla OLED 0.96" 128x64  (la más común)
+#   "SH1107"  → pantalla OLED 1.5"  128x128
+DISPLAY_TYPE         = "SSD1306"
+
+# Dirección I2C de la pantalla (normalmente 0x3C, algunas SH1107 usan 0x3D)
+DISPLAY_ADDR         = 0x3C
 
 # Modo de datos:
 #   "monitor"    → usa TetraPack Monitor (necesita MONITOR_URL)
@@ -25,7 +34,7 @@ MONITOR_URL          = "http://localhost:5000"
 # ISSI de tu terminal local (para priorizar tu TG)
 LOCAL_ISSI           = "0"       # Introduce el ISSI de tu terminal TETRA local
 
-# URL del servidor XLX/Brew (para llamadas activas al arrancar)
+# URL del servidor XLX/Brew (para consultar llamadas activas al arrancar)
 BREW_URL             = "https://watch.tetrapack.online/api/brew/calls"
 
 # Tiempos de visualización
@@ -35,22 +44,40 @@ SDS_DISPLAY          = 5    # segundos para mensajes SDS
 SCREEN_OFF_TIMEOUT   = 300  # segundos hasta apagar pantalla (5 min)
 # ──────────────────────────────────────────────────────────────
 
-# URLs derivadas (no editar)
+# URLs derivadas
 API_URL   = f"{MONITOR_URL}/api/log-stream"
 STATS_URL = f"{MONITOR_URL}/api/system/stats"
 
-# ─── INIT OLED ────────────────────────────────────────────────
-i2c    = busio.I2C(board.SCL, board.SDA)
-oled   = adafruit_ssd1306.SSD1306_I2C(128, 64, i2c, addr=0x3C)
-WIDTH  = oled.width
-HEIGHT = oled.height
+# ─── INIT PANTALLA ────────────────────────────────────────────
+i2c = busio.I2C(board.SCL, board.SDA)
 
+if DISPLAY_TYPE == "SH1107":
+    import adafruit_sh1107
+    oled   = adafruit_sh1107.SH1107_I2C(128, 128, i2c, addr=DISPLAY_ADDR, rotation=0)
+    WIDTH  = 128
+    HEIGHT = 128
+else:
+    import adafruit_ssd1306
+    oled   = adafruit_ssd1306.SSD1306_I2C(128, 64, i2c, addr=DISPLAY_ADDR)
+    WIDTH  = 128
+    HEIGHT = 64
+
+print(f"[oled] Pantalla: {DISPLAY_TYPE} {WIDTH}x{HEIGHT} en 0x{DISPLAY_ADDR:02X}")
+
+# ─── FUENTES ──────────────────────────────────────────────────
 try:
     font_big   = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 14)
     font_med   = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 11)
     font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 10)
+    # Fuentes grandes para SH1107 que tiene más espacio
+    if DISPLAY_TYPE == "SH1107":
+        font_xl  = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 20)
+        font_lg  = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 16)
+    else:
+        font_xl  = font_big
+        font_lg  = font_big
 except:
-    font_big = font_med = font_small = ImageFont.load_default()
+    font_big = font_med = font_small = font_xl = font_lg = ImageFont.load_default()
 
 # ─── ZONA HORARIA ─────────────────────────────────────────────
 timezone_actual = [pytz.utc]
@@ -103,7 +130,6 @@ def get_public_ip():
         return ""
 
 def fetch_stats_monitor():
-    """Obtiene stats desde TetraPack Monitor."""
     last_ip = None
     while True:
         try:
@@ -121,7 +147,6 @@ def fetch_stats_monitor():
         time.sleep(10)
 
 def fetch_stats_system():
-    """Obtiene stats directamente del sistema (sin dashboard)."""
     last_ip = None
     while True:
         try:
@@ -138,7 +163,7 @@ def fetch_stats_system():
                 threading.Thread(target=load_radioid, daemon=True).start()
         except:
             pass
-        time.sleep(30)  # más espaciado porque son comandos del sistema
+        time.sleep(30)
 
 def fetch_stats():
     if DATA_MODE == "monitor":
@@ -147,10 +172,10 @@ def fetch_stats():
         fetch_stats_system()
 
 # ─── RADIOID ──────────────────────────────────────────────────
-RADIOID_URL  = "https://radioid.net/static/user.csv"
-CACHE_FILE   = "/home/pi/radioid_cache.csv"
+RADIOID_URL   = "https://radioid.net/static/user.csv"
+CACHE_FILE    = "/home/pi/radioid_cache.csv"
 CACHE_MAX_AGE = timedelta(hours=24)
-radioid_db   = {}
+radioid_db    = {}
 
 def cache_is_fresh():
     if not os.path.exists(CACHE_FILE):
@@ -215,7 +240,9 @@ _shift_tick   = [0]
 def get_shift():
     t = _shift_tick[0]
     _shift_tick[0] = (t + 1) % 628
-    return int(1.5 + 1.5 * math.sin(t / 50)), int(1.0 + 1.0 * math.sin(t / 37))
+    sx = int(1.5 + 1.5 * math.sin(t / 50))
+    sy = int(1.0 + 1.0 * math.sin(t / 37))
+    return sx, sy
 
 def truncate(text, font, max_width):
     if not text:
@@ -231,24 +258,33 @@ def truncate(text, font, max_width):
             hi = mid
     return text[:lo]
 
+def oled_display(img):
+    """Muestra imagen en pantalla compatible con SSD1306 y SH1107."""
+    with lock:
+        oled.image(img)
+        oled.show()
+
 def show_splash(mensaje, subtitulo=""):
     oled.poweron()
     oled.contrast(255)
     current_event["active"] = False
     img  = Image.new("1", (WIDTH, HEIGHT))
     draw = ImageDraw.Draw(img)
-    draw.rectangle((0, 0, WIDTH-1, 15), fill=1)
+    # Barra superior
+    bar_h = 20 if DISPLAY_TYPE == "SH1107" else 15
+    draw.rectangle((0, 0, WIDTH-1, bar_h), fill=1)
     titulo = "TETRA Monitor"
     tw = font_big.getbbox(titulo)[2] - font_big.getbbox(titulo)[0]
-    draw.text(((WIDTH - tw) // 2, 1), titulo, font=font_big, fill=0)
-    w = font_big.getbbox(mensaje)[2] - font_big.getbbox(mensaje)[0]
-    draw.text(((WIDTH - w) // 2, 20), mensaje, font=font_big, fill=1)
+    draw.text(((WIDTH - tw) // 2, 3), titulo, font=font_big, fill=0)
+    # Mensaje centrado
+    f = font_xl if DISPLAY_TYPE == "SH1107" else font_big
+    w = f.getbbox(mensaje)[2] - f.getbbox(mensaje)[0]
+    y = HEIGHT // 2 - 10
+    draw.text(((WIDTH - w) // 2, y), mensaje, font=f, fill=1)
     if subtitulo:
-        w2 = font_small.getbbox(subtitulo)[2] - font_small.getbbox(subtitulo)[0]
-        draw.text(((WIDTH - w2) // 2, 40), subtitulo, font=font_small, fill=1)
-    with lock:
-        oled.image(img)
-        oled.show()
+        w2 = font_med.getbbox(subtitulo)[2] - font_med.getbbox(subtitulo)[0]
+        draw.text(((WIDTH - w2) // 2, y + 25), subtitulo, font=font_med, fill=1)
+    oled_display(img)
 
 def show_standby():
     oled.contrast(50)
@@ -263,43 +299,88 @@ def show_standby():
     temp = stats.get("cpuTemp", 0)
     volt = stats.get("voltage", 0)
     sx, sy = get_shift()
-    draw.rectangle((sx, sy, WIDTH-1-sx, 15+sy), fill=1)
-    titulo = "TETRA Monitor"
-    tw = font_big.getbbox(titulo)[2] - font_big.getbbox(titulo)[0]
-    draw.text(((WIDTH - tw) // 2 + sx, 1 + sy), titulo, font=font_big, fill=0)
-    hora = hora_local()
-    hw = font_big.getbbox(hora)[2] - font_big.getbbox(hora)[0]
-    draw.text(((WIDTH - hw) // 2 + sx, 18 + sy), hora, font=font_big, fill=1)
-    temp_txt = f"{temp:.1f}\u00b0C"
-    volt_ok  = "OK" if float(volt) >= 4.8 else "!"
-    volt_txt = f"{volt}V {volt_ok}"
-    vw = font_med.getbbox(volt_txt)[2] - font_med.getbbox(volt_txt)[0]
-    draw.text((2 + sx, 36 + sy), temp_txt, font=font_med, fill=1)
-    draw.text((WIDTH - vw - 2 - sx, 36 + sy), volt_txt, font=font_med, fill=1)
-    draw.text((2 + sx, 52 + sy), f"IP {ip}", font=font_small, fill=1)
-    with lock:
-        oled.image(img)
-        oled.show()
+
+    if DISPLAY_TYPE == "SH1107":
+        # Layout 128x128 — más espacio, fuentes más grandes
+        draw.rectangle((sx, sy, WIDTH-1-sx, 20+sy), fill=1)
+        titulo = "TETRA Monitor"
+        tw = font_lg.getbbox(titulo)[2] - font_lg.getbbox(titulo)[0]
+        draw.text(((WIDTH - tw) // 2 + sx, 2 + sy), titulo, font=font_lg, fill=0)
+        # Hora grande centrada
+        hora = hora_local()
+        hw = font_xl.getbbox(hora)[2] - font_xl.getbbox(hora)[0]
+        draw.text(((WIDTH - hw) // 2 + sx, 28 + sy), hora, font=font_xl, fill=1)
+        # Temperatura
+        draw.text((4 + sx, 58 + sy), f"Temp:", font=font_med, fill=1)
+        draw.text((4 + sx, 73 + sy), f"{temp:.1f}\u00b0C", font=font_lg, fill=1)
+        # Voltaje
+        volt_ok  = "OK" if float(volt) >= 4.8 else "!"
+        volt_txt = f"{volt}V {volt_ok}"
+        vw = font_lg.getbbox(volt_txt)[2] - font_lg.getbbox(volt_txt)[0]
+        draw.text((WIDTH - vw - 4 - sx, 73 + sy), volt_txt, font=font_lg, fill=1)
+        # IP
+        draw.text((4 + sx, 100 + sy), f"IP {ip}", font=font_med, fill=1)
+        # Línea separadora
+        draw.line((0, 95+sy, WIDTH, 95+sy), fill=1, width=1)
+    else:
+        # Layout 128x64 — original
+        draw.rectangle((sx, sy, WIDTH-1-sx, 15+sy), fill=1)
+        titulo = "TETRA Monitor"
+        tw = font_big.getbbox(titulo)[2] - font_big.getbbox(titulo)[0]
+        draw.text(((WIDTH - tw) // 2 + sx, 1 + sy), titulo, font=font_big, fill=0)
+        hora = hora_local()
+        hw = font_big.getbbox(hora)[2] - font_big.getbbox(hora)[0]
+        draw.text(((WIDTH - hw) // 2 + sx, 18 + sy), hora, font=font_big, fill=1)
+        temp_txt = f"{temp:.1f}\u00b0C"
+        volt_ok  = "OK" if float(volt) >= 4.8 else "!"
+        volt_txt = f"{volt}V {volt_ok}"
+        vw = font_med.getbbox(volt_txt)[2] - font_med.getbbox(volt_txt)[0]
+        draw.text((2 + sx, 36 + sy), temp_txt, font=font_med, fill=1)
+        draw.text((WIDTH - vw - 2 - sx, 36 + sy), volt_txt, font=font_med, fill=1)
+        draw.text((2 + sx, 52 + sy), f"IP {ip}", font=font_small, fill=1)
+
+    oled_display(img)
 
 def _render_event(issi, tipo, sds_text, issi_dst):
     callsign, name, provincia = lookup(issi)
     dst_cs, _, _ = lookup(issi_dst) if issi_dst else ("", "", "")
     img  = Image.new("1", (WIDTH, HEIGHT))
     draw = ImageDraw.Draw(img)
-    draw.rectangle((0, 0, WIDTH-1, 15), fill=1)
-    draw.text((2, 1), truncate(f"{callsign} {issi}", font_big, WIDTH-4), font=font_big, fill=0)
-    draw.text((2, 17), truncate(name, font_med, WIDTH-4), font=font_med, fill=1)
-    draw.text((2, 29), truncate(provincia, font_small, WIDTH-4), font=font_small, fill=1)
-    if dst_cs:
-        dst_display = dst_cs.replace("ISSI:", "") if dst_cs.startswith("ISSI:") else dst_cs
-        draw.text((2, 40), truncate(f"{callsign} -> {dst_display}", font_med, WIDTH-4), font=font_med, fill=1)
-        draw.text((2, 52), f"[{tipo}]", font=font_small, fill=1)
-    else:
-        draw.text((2, 40), f"[{tipo}]", font=font_med, fill=1)
-        if sds_text:
-            draw.text((2, 52), truncate(sds_text, font_small, WIDTH-4), font=font_small, fill=1)
+
+    if DISPLAY_TYPE == "SH1107":
+        # Layout 128x128 — más espacioso y legible
+        draw.rectangle((0, 0, WIDTH-1, 20), fill=1)
+        draw.text((2, 2), truncate(f"{callsign} {issi}", font_lg, WIDTH-4), font=font_lg, fill=0)
+        draw.text((2, 24), truncate(name, font_med, WIDTH-4), font=font_med, fill=1)
+        draw.text((2, 42), truncate(provincia, font_small, WIDTH-4), font=font_small, fill=1)
+        draw.line((0, 58, WIDTH, 58), fill=1, width=1)
+        if dst_cs:
+            dst_display = dst_cs.replace("ISSI:", "") if dst_cs.startswith("ISSI:") else dst_cs
+            draw.text((2, 63), truncate(f"{callsign} -> {dst_display}", font_med, WIDTH-4), font=font_med, fill=1)
+            draw.text((2, 83), f"[{tipo}]", font=font_lg, fill=1)
+            draw.text((2, 108), hora_local(), font=font_small, fill=1)
         else:
-            draw.text((2, 52), hora_local(), font=font_small, fill=1)
+            draw.text((2, 63), f"[{tipo}]", font=font_lg, fill=1)
+            if sds_text:
+                draw.text((2, 90), truncate(sds_text, font_med, WIDTH-4), font=font_med, fill=1)
+            else:
+                draw.text((2, 108), hora_local(), font=font_small, fill=1)
+    else:
+        # Layout 128x64 — original
+        draw.rectangle((0, 0, WIDTH-1, 15), fill=1)
+        draw.text((2, 1), truncate(f"{callsign} {issi}", font_big, WIDTH-4), font=font_big, fill=0)
+        draw.text((2, 17), truncate(name, font_med, WIDTH-4), font=font_med, fill=1)
+        draw.text((2, 29), truncate(provincia, font_small, WIDTH-4), font=font_small, fill=1)
+        if dst_cs:
+            dst_display = dst_cs.replace("ISSI:", "") if dst_cs.startswith("ISSI:") else dst_cs
+            draw.text((2, 40), truncate(f"{callsign} -> {dst_display}", font_med, WIDTH-4), font=font_med, fill=1)
+            draw.text((2, 52), f"[{tipo}]", font=font_small, fill=1)
+        else:
+            draw.text((2, 40), f"[{tipo}]", font=font_med, fill=1)
+            if sds_text:
+                draw.text((2, 52), truncate(sds_text, font_small, WIDTH-4), font=font_small, fill=1)
+            else:
+                draw.text((2, 52), hora_local(), font=font_small, fill=1)
     return img
 
 def show_event(issi, tipo, sds_text=None, issi_dst=None):
@@ -308,9 +389,7 @@ def show_event(issi, tipo, sds_text=None, issi_dst=None):
     oled.contrast(255)
     current_event.update({"active": True, "issi": issi, "tipo": tipo,
                           "sds_text": sds_text, "issi_dst": issi_dst})
-    with lock:
-        oled.image(_render_event(issi, tipo, sds_text, issi_dst))
-        oled.show()
+    oled_display(_render_event(issi, tipo, sds_text, issi_dst))
 
 def clock_updater():
     last_hora = ""
@@ -321,12 +400,10 @@ def clock_updater():
             if hora != last_hora:
                 last_hora = hora
                 try:
-                    with lock:
-                        oled.image(_render_event(
-                            current_event["issi"], current_event["tipo"],
-                            current_event["sds_text"], current_event["issi_dst"]
-                        ))
-                        oled.show()
+                    oled_display(_render_event(
+                        current_event["issi"], current_event["tipo"],
+                        current_event["sds_text"], current_event["issi_dst"]
+                    ))
                 except:
                     pass
 
@@ -334,9 +411,8 @@ def clock_updater():
 last_event_time = [0]
 standby_since   = [0]
 call_start_time = [0]
-pending_sds     = {}
-active_calls    = {}       # uuid -> (issi, gssi)
-priority_tg     = [None]  # TG del terminal local
+active_calls    = {}
+priority_tg     = [None]
 _end_timer      = [None]
 
 def schedule_standby(delay=3):
@@ -344,7 +420,6 @@ def schedule_standby(delay=3):
         _end_timer[0].cancel()
     def do_reset():
         if active_calls:
-            # Priorizar TG seleccionado localmente
             best_issi, best_gssi = None, None
             for uuid, (issi, gssi) in active_calls.items():
                 if gssi == priority_tg[0]:
@@ -369,6 +444,19 @@ def cancel_standby():
         _end_timer[0].cancel()
         _end_timer[0] = None
 
+def debe_mostrar(new_issi, new_gssi):
+    if not current_event["active"]:
+        return True
+    if priority_tg[0] and str(new_gssi) == str(priority_tg[0]):
+        return True
+    curr_sds = current_event.get("sds_text", "") or ""
+    curr_tg = curr_sds.replace("TG:", "") if curr_sds.startswith("TG:") else None
+    if priority_tg[0] and str(curr_tg) == str(priority_tg[0]):
+        return False
+    if str(new_issi) == str(LOCAL_ISSI):
+        return True
+    return False
+
 # ─── PATRONES ─────────────────────────────────────────────────
 RE_SDS        = re.compile(r"SDS: U-SDS-DATA from ISSI (\d+) to ISSI (\d+), type=(\d+)")
 RE_SDS_TEXT   = re.compile(r'text[=:\s]+"([^"]+)"', re.IGNORECASE)
@@ -383,21 +471,6 @@ RE_REBOOT     = re.compile(r"systemd.*reboot|reboot.*systemd|Rebooting", re.IGNO
 RE_SHUTDOWN   = re.compile(r"systemd.*halt|systemd.*poweroff|shutdown|Halting", re.IGNORECASE)
 RE_UNDERVOLT  = re.compile(r"Undervoltage detected")
 RE_VOLT_OK    = re.compile(r"Voltage normalised")
-
-
-def debe_mostrar(new_issi, new_gssi):
-    """Decide si la nueva llamada reemplaza la pantalla actual."""
-    if not current_event["active"]:
-        return True
-    if priority_tg[0] and str(new_gssi) == str(priority_tg[0]):
-        return True
-    curr_sds = current_event.get("sds_text", "") or ""
-    curr_tg = curr_sds.replace("TG:", "") if curr_sds.startswith("TG:") else None
-    if priority_tg[0] and str(curr_tg) == str(priority_tg[0]):
-        return False
-    if str(new_issi) == str(LOCAL_ISSI):
-        return True
-    return False
 
 def process_line(line):
     if RE_SHUTDOWN.search(line):
@@ -414,18 +487,15 @@ def process_line(line):
         return
     if RE_NET_STALE.search(line):
         return
-    # Fin de llamada de red
     m = RE_NET_END.search(line)
     if m:
         uuid = m.group(1) or m.group(2) or ""
         active_calls.pop(uuid, None)
         schedule_standby(3)
         return
-    # Fin de llamada local
     if RE_LOCAL_END.search(line):
         schedule_standby(3)
         return
-    # Voz de red
     m = RE_NET_VOICE.search(line)
     if m:
         uuid, issi_src, gssi_dst = m.group(1), m.group(2), m.group(3)
@@ -436,17 +506,13 @@ def process_line(line):
             show_event(issi_src, "NET VOZ", sds_text=f"TG:{gssi_dst}")
             last_event_time[0] = time.time()
             call_start_time[0] = time.time()
-        else:
-            print(f"[prio] Ignorando TG:{gssi_dst}, pantalla muestra TG prioritario")
         return
-    # SDS de red
     m = RE_NET_SDS.search(line)
     if m:
         print(f"[brew] SDS RED {m.group(1)} -> {m.group(2)}")
         show_event(m.group(1), "NET SDS", issi_dst=m.group(2))
         last_event_time[0] = time.time() - (DISPLAY_TIMEOUT - SDS_DISPLAY)
         return
-    # Llamada privada local
     m = RE_VOICE_P2P.search(line)
     if m:
         cancel_standby()
@@ -456,7 +522,6 @@ def process_line(line):
         last_event_time[0] = time.time()
         call_start_time[0] = time.time()
         return
-    # Llamada de grupo local
     m = RE_VOICE.search(line)
     if m:
         cancel_standby()
@@ -471,7 +536,6 @@ def process_line(line):
         last_event_time[0] = time.time()
         call_start_time[0] = time.time()
         return
-    # SDS local
     m = RE_SDS.search(line)
     if m:
         issi_src, issi_dst = m.group(1), m.group(2)
@@ -482,7 +546,6 @@ def process_line(line):
 
 # ─── STREAM DE LOGS ───────────────────────────────────────────
 def stream_monitor():
-    """Lee logs desde TetraPack Monitor vía HTTP SSE."""
     while True:
         try:
             print("[stream] Conectando a TetraPack Monitor...")
@@ -502,7 +565,6 @@ def stream_monitor():
             time.sleep(1)
 
 def stream_journalctl():
-    """Lee logs directamente desde journalctl."""
     while True:
         try:
             print(f"[stream] Leyendo journalctl de {SERVICE_NAME}...")
@@ -545,7 +607,7 @@ signal.signal(signal.SIGINT, handle_signal)
 
 # ─── MAIN ─────────────────────────────────────────────────────
 def main():
-    print(f"[oled] Modo: {DATA_MODE} | Servicio: {SERVICE_NAME}")
+    print(f"[oled] Modo: {DATA_MODE} | Servicio: {SERVICE_NAME} | Pantalla: {DISPLAY_TYPE}")
     show_splash("Iniciando...")
     time.sleep(3)
     threading.Thread(target=load_radioid,  daemon=True).start()
