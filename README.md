@@ -80,7 +80,7 @@ Edita `tetra_oled.py` y ajusta la sección de configuración al principio del ar
 SERVICE_NAME    = "tmo.service"   # nombre de tu servicio systemd
 DATA_MODE       = "monitor"       # "monitor" o "journalctl"
 MONITOR_URL     = "http://localhost:5000"  # si DATA_MODE = "monitor"
-LOCAL_ISSI      = "2150212"       # ISSI de tu terminal local
+LOCAL_ISSI      = "0"       # ISSI de tu terminal local
 BREW_URL        = "http://TU_SERVIDOR_XLX:PUERTO/api/brew/calls"  # servidor XLX
 
 DISPLAY_TIMEOUT     = 30   # segundos hasta standby

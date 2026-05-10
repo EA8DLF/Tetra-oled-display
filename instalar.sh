@@ -130,7 +130,7 @@ curl -sSL "${REPO}/tetra_oled.py" -o ~/tetra_oled.py
 sed -i "s|SERVICE_NAME         = \"tmo.service\"|SERVICE_NAME         = \"${SERVICE_NAME}\"|" ~/tetra_oled.py
 sed -i "s|DATA_MODE            = \"monitor\"|DATA_MODE            = \"${DATA_MODE}\"|" ~/tetra_oled.py
 sed -i "s|MONITOR_URL          = \"http://localhost:5000\"|MONITOR_URL          = \"${MONITOR_URL}\"|" ~/tetra_oled.py
-sed -i "s|LOCAL_ISSI           = \"2150212\"|LOCAL_ISSI           = \"${LOCAL_ISSI}\"|" ~/tetra_oled.py
+sed -i "s|LOCAL_ISSI           = \"0\"|LOCAL_ISSI           = \"${LOCAL_ISSI}\"|" ~/tetra_oled.py
 ok "Script configurado"
 
 # ── 11. SERVICIO SYSTEMD ──────────────────────────────────────
