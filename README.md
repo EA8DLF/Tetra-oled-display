@@ -4,7 +4,7 @@
 [![Version](https://img.shields.io/badge/version-3.0.0-green.svg)](CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi-red.svg)](https://www.raspberrypi.org/)
 
-**Autor:** Jose Maria Minguillon — EA8DLF  
+**Autor:** Jose Maria — EA8DLF  
 **Compatible con:** [tetra-bluestation](https://github.com/MidnightBlueLabs/tetra-bluestation) · MidnightBlueLabs
 
 Sistema de visualización en tiempo real para redes TETRA sobre Raspberry Pi con pantalla OLED SSD1306 128×64. Muestra quién transmite, indicativo, nombre, provincia, tipo de llamada y mensajes SDS — tanto locales como del resto de la red.
