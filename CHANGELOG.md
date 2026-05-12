@@ -1,3 +1,13 @@
+## [3.2.0] - 2026-05-12
+
+### Añadido
+- Soporte para pantalla SSD1327 1.5" 128×128 (ZJY-M150 y similares, escala de grises)
+- Opción 3 en el script de instalación para seleccionar SSD1327
+- Instalación automática de `adafruit-circuitpython-ssd1327` al elegir SSD1327
+- Layout 128×128 reutilizado del SH1107 (fuentes grandes, más información visible)
+
+---
+
 ## [3.1.0] - 2026-05-10
 
 ### Añadido

@@ -1,13 +1,13 @@
 # TETRA OLED Display
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-3.0.0-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.2.0-green.svg)](CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi-red.svg)](https://www.raspberrypi.org/)
 
 **Autor:** Jose Maria Minguillon — EA8DLF  
 **Compatible con:** [tetra-bluestation](https://github.com/MidnightBlueLabs/tetra-bluestation) · MidnightBlueLabs
 
-Sistema de visualización en tiempo real para redes TETRA sobre Raspberry Pi con pantalla OLED SSD1306 128×64. Muestra quién transmite, indicativo, nombre, provincia, tipo de llamada y mensajes SDS — tanto locales como del resto de la red.
+Sistema de visualización en tiempo real para redes TETRA sobre Raspberry Pi con pantalla OLED. Muestra quién transmite, indicativo, nombre, provincia, tipo de llamada y mensajes SDS — tanto locales como del resto de la red. Compatible con SSD1306 (128×64), SH1107 (128×128) y SSD1327 (128×128).
 
 ---
 
@@ -27,7 +27,7 @@ El script de instalación guía paso a paso y configura todo automáticamente.
 | Componente | Descripción |
 |---|---|
 | Raspberry Pi | Modelos 3, 4 o 5 con Raspberry Pi OS 64-bit |
-| Pantalla OLED | SSD1306 0.96" 128×64 I2C **o** SH1107 1.5" 128×128 I2C (4 pines) |
+| Pantalla OLED | SSD1306 0.96" 128×64 I2C **o** SH1107 1.5" 128×128 I2C **o** SSD1327 1.5" 128×128 I2C (4 pines) |
 | Cables | 4 jumpers hembra-hembra |
 
 ### Software
@@ -239,7 +239,7 @@ Puedes usarlo, modificarlo y distribuirlo libremente citando al autor.
 
 ## English Summary
 
-**TETRA OLED Display** is a real-time monitoring system for TETRA radio networks, designed to run on a Raspberry Pi with an SSD1306 or SH1107 OLED display. It shows who is transmitting, their callsign, name, province, call type, TalkGroup, and SDS messages — both local and network-wide.
+**TETRA OLED Display** is a real-time monitoring system for TETRA radio networks, designed to run on a Raspberry Pi with an SSD1306, SH1107 or SSD1327 OLED display. It shows who is transmitting, their callsign, name, province, call type, TalkGroup, and SDS messages — both local and network-wide.
 
 ### Quick Install
 
@@ -253,6 +253,7 @@ bash <(curl -sSL https://raw.githubusercontent.com/EA8DLF/Tetra-oled-display/mai
 |---|---|---|
 | SSD1306 | 0.96" | 128×64 |
 | SH1107 | 1.5" | 128×128 |
+| SSD1327 | 1.5" | 128×128 (grayscale) |
 
 ### Wiring (all Raspberry Pi models with 40-pin GPIO)
 
@@ -274,7 +275,7 @@ bash <(curl -sSL https://raw.githubusercontent.com/EA8DLF/Tetra-oled-display/mai
 SERVICE_NAME  = "tmo.service"   # your bluestation systemd service name
 DATA_MODE     = "monitor"       # "monitor" or "journalctl"
 MONITOR_URL   = "http://localhost:5000"
-DISPLAY_TYPE  = "SSD1306"       # "SSD1306" or "SH1107"
+DISPLAY_TYPE  = "SSD1306"       # "SSD1306", "SH1107" o "SSD1327"
 LOCAL_ISSI    = "0"             # your local terminal ISSI (for TG priority)
 ```
 

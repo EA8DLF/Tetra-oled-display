@@ -127,7 +127,8 @@ info "Configurando tipo de pantalla..."
 echo "¿Qué modelo de pantalla OLED tienes?"
 echo "  1) SSD1306 - 0.96\" 128x64  (la más común, 4 pines)"
 echo "  2) SH1107  - 1.5\"  128x128 (Hailege y similares, 4 pines)"
-read -p "Elige [1/2]: " display_opt
+echo "  3) SSD1327 - 1.5\"  128x128 (ZJY-M150 y similares, escala de grises)"
+read -p "Elige [1/2/3]: " display_opt
 case $display_opt in
     2)
         DISPLAY_TYPE="SH1107"
@@ -136,6 +137,14 @@ case $display_opt in
         source ~/oled-env/bin/activate
         pip install adafruit-circuitpython-sh1107 -q
         ok "Librería SH1107 instalada"
+        ;;
+    3)
+        DISPLAY_TYPE="SSD1327"
+        ok "Pantalla: SSD1327 128x128 (escala de grises)"
+        # Instalar librería SSD1327
+        source ~/oled-env/bin/activate
+        pip install adafruit-circuitpython-ssd1327 -q
+        ok "Librería SSD1327 instalada"
         ;;
     *)
         DISPLAY_TYPE="SSD1306"

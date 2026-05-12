@@ -3,7 +3,7 @@
 #  TETRA OLED Display v3.1
 #  Jose Maria - EA8DLF · 2026
 #  https://github.com/EA8DLF/Tetra-oled-display
-#  Compatible con SSD1306 (128x64) y SH1107 (128x128)
+#  Compatible con SSD1306 (128x64), SH1107 (128x128) y SSD1327 (128x128)
 # ═══════════════════════════════════════════════════════════════
 
 import re, json, time, requests, threading, os, csv, signal, sys, random, math, subprocess, socket
@@ -17,7 +17,8 @@ SERVICE_NAME         = "tmo.service"
 
 # Tipo de pantalla:
 #   "SSD1306" → pantalla OLED 0.96" 128x64  (la más común)
-#   "SH1107"  → pantalla OLED 1.5"  128x128
+#   "SH1107"  → pantalla OLED 1.5"  128x128 (Hailege y similares)
+#   "SSD1327" → pantalla OLED 1.5"  128x128 (ZJY-M150 y similares, escala de grises)
 DISPLAY_TYPE         = "SSD1306"
 
 # Dirección I2C de la pantalla (normalmente 0x3C, algunas SH1107 usan 0x3D)
@@ -56,6 +57,11 @@ if DISPLAY_TYPE == "SH1107":
     oled   = adafruit_sh1107.SH1107_I2C(128, 128, i2c, addr=DISPLAY_ADDR, rotation=0)
     WIDTH  = 128
     HEIGHT = 128
+elif DISPLAY_TYPE == "SSD1327":
+    import adafruit_ssd1327
+    oled   = adafruit_ssd1327.SSD1327_I2C(128, 128, i2c, addr=DISPLAY_ADDR)
+    WIDTH  = 128
+    HEIGHT = 128
 else:
     import adafruit_ssd1306
     oled   = adafruit_ssd1306.SSD1306_I2C(128, 64, i2c, addr=DISPLAY_ADDR)
@@ -69,8 +75,8 @@ try:
     font_big   = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 14)
     font_med   = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 11)
     font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 10)
-    # Fuentes grandes para SH1107 que tiene más espacio
-    if DISPLAY_TYPE == "SH1107":
+    # Fuentes grandes para SH1107/SSD1327 que tienen más espacio
+    if DISPLAY_TYPE in ("SH1107", "SSD1327"):
         font_xl  = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 20)
         font_lg  = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 16)
     else:
@@ -271,13 +277,13 @@ def show_splash(mensaje, subtitulo=""):
     img  = Image.new("1", (WIDTH, HEIGHT))
     draw = ImageDraw.Draw(img)
     # Barra superior
-    bar_h = 20 if DISPLAY_TYPE == "SH1107" else 15
+    bar_h = 20 if DISPLAY_TYPE in ("SH1107", "SSD1327") else 15
     draw.rectangle((0, 0, WIDTH-1, bar_h), fill=1)
     titulo = "TETRA Monitor"
     tw = font_big.getbbox(titulo)[2] - font_big.getbbox(titulo)[0]
     draw.text(((WIDTH - tw) // 2, 3), titulo, font=font_big, fill=0)
     # Mensaje centrado
-    f = font_xl if DISPLAY_TYPE == "SH1107" else font_big
+    f = font_xl if DISPLAY_TYPE in ("SH1107", "SSD1327") else font_big
     w = f.getbbox(mensaje)[2] - f.getbbox(mensaje)[0]
     y = HEIGHT // 2 - 10
     draw.text(((WIDTH - w) // 2, y), mensaje, font=f, fill=1)
@@ -300,7 +306,7 @@ def show_standby():
     volt = stats.get("voltage", 0)
     sx, sy = get_shift()
 
-    if DISPLAY_TYPE == "SH1107":
+    if DISPLAY_TYPE in ("SH1107", "SSD1327"):
         # Layout 128x128 — más espacio, fuentes más grandes
         draw.rectangle((sx, sy, WIDTH-1-sx, 20+sy), fill=1)
         titulo = "TETRA Monitor"
@@ -347,7 +353,7 @@ def _render_event(issi, tipo, sds_text, issi_dst):
     img  = Image.new("1", (WIDTH, HEIGHT))
     draw = ImageDraw.Draw(img)
 
-    if DISPLAY_TYPE == "SH1107":
+    if DISPLAY_TYPE in ("SH1107", "SSD1327"):
         # Layout 128x128 — más espacioso y legible
         draw.rectangle((0, 0, WIDTH-1, 20), fill=1)
         draw.text((2, 2), truncate(f"{callsign} {issi}", font_lg, WIDTH-4), font=font_lg, fill=0)
