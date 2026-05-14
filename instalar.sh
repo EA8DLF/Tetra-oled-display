@@ -111,7 +111,7 @@ info "Creando entorno virtual Python en $RPIHOME/oled-env ..."
 sudo -u "$RPIUSER" python3 -m venv "$RPIHOME/oled-env"
 sudo -u "$RPIUSER" "$RPIHOME/oled-env/bin/pip" install --upgrade pip -q
 sudo -u "$RPIUSER" "$RPIHOME/oled-env/bin/pip" install \
-    adafruit-circuitpython-ssd1306 pillow requests pytz luma.oled -q
+    adafruit-circuitpython-ssd1306 pillow requests pytz -q
 ok "Paquetes Python instalados"
 
 # ── 8. COPIAR MÓDULO lgpio ────────────────────────────────────
