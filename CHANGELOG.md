@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.3.1] - 2026-05-14
+
+### Corregido
+- Voltaje: usa `vcgencmd get_throttled` en lugar de `measure_volts` (compatible con todos los modelos)
+- Pantalla muestra `5.0V OK` cuando la alimentación es correcta o `⚠ VOLT` si hay problema real
+- Si `vcgencmd` no está disponible, el voltaje no se muestra (en lugar de mostrar `0V`)
+- `instalar.sh`: añadida dependencia `libopenjp2-7` (requerida por Pillow)
+
+---
+
 ## [3.3.0] - 2026-05-14
 
 ### Añadido

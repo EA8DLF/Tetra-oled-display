@@ -122,9 +122,11 @@ def get_temp():
 
 def get_voltage():
     try:
-        r = subprocess.run(["vcgencmd", "measure_volts"], capture_output=True, text=True, timeout=2)
-        v = re.search(r"volt=([\d.]+)", r.stdout)
-        return float(v.group(1)) if v else 0
+        r = subprocess.run(["vcgencmd", "get_throttled"], capture_output=True, text=True, timeout=2)
+        m = re.search(r"throttled=(0x[\da-fA-F]+)", r.stdout)
+        if m:
+            return 4.7 if int(m.group(1), 16) != 0 else 5.0
+        return 0
     except:
         return 0
 
@@ -320,10 +322,15 @@ def show_standby():
         draw.text((4 + sx, 58 + sy), f"Temp:", font=font_med, fill=1)
         draw.text((4 + sx, 73 + sy), f"{temp:.1f}\u00b0C", font=font_lg, fill=1)
         # Voltaje
-        volt_ok  = "OK" if float(volt) >= 4.8 else "!"
-        volt_txt = f"{volt}V {volt_ok}"
-        vw = font_lg.getbbox(volt_txt)[2] - font_lg.getbbox(volt_txt)[0]
-        draw.text((WIDTH - vw - 4 - sx, 73 + sy), volt_txt, font=font_lg, fill=1)
+        if volt == 5.0:
+            volt_txt = "5.0V OK"
+        elif volt == 4.7:
+            volt_txt = "\u26a0 VOLT"
+        else:
+            volt_txt = ""
+        if volt_txt:
+            vw = font_lg.getbbox(volt_txt)[2] - font_lg.getbbox(volt_txt)[0]
+            draw.text((WIDTH - vw - 4 - sx, 73 + sy), volt_txt, font=font_lg, fill=1)
         # IP
         draw.text((4 + sx, 100 + sy), f"IP {ip}", font=font_med, fill=1)
         # Línea separadora
@@ -338,11 +345,16 @@ def show_standby():
         hw = font_big.getbbox(hora)[2] - font_big.getbbox(hora)[0]
         draw.text(((WIDTH - hw) // 2 + sx, 18 + sy), hora, font=font_big, fill=1)
         temp_txt = f"{temp:.1f}\u00b0C"
-        volt_ok  = "OK" if float(volt) >= 4.8 else "!"
-        volt_txt = f"{volt}V {volt_ok}"
-        vw = font_med.getbbox(volt_txt)[2] - font_med.getbbox(volt_txt)[0]
+        if volt == 5.0:
+            volt_txt = "5.0V OK"
+        elif volt == 4.7:
+            volt_txt = "\u26a0 VOLT"
+        else:
+            volt_txt = ""
         draw.text((2 + sx, 36 + sy), temp_txt, font=font_med, fill=1)
-        draw.text((WIDTH - vw - 2 - sx, 36 + sy), volt_txt, font=font_med, fill=1)
+        if volt_txt:
+            vw = font_med.getbbox(volt_txt)[2] - font_med.getbbox(volt_txt)[0]
+            draw.text((WIDTH - vw - 2 - sx, 36 + sy), volt_txt, font=font_med, fill=1)
         draw.text((2 + sx, 52 + sy), f"IP {ip}", font=font_small, fill=1)
 
     oled_display(img)
