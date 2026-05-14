@@ -179,7 +179,7 @@ def fetch_stats():
 
 # ─── RADIOID ──────────────────────────────────────────────────
 RADIOID_URL   = "https://radioid.net/static/user.csv"
-CACHE_FILE    = "/home/pi/radioid_cache.csv"
+CACHE_FILE    = os.path.join(os.path.expanduser("~"), "radioid_cache.csv")
 CACHE_MAX_AGE = timedelta(hours=24)
 radioid_db    = {}
 
