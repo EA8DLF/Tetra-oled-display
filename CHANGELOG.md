@@ -1,3 +1,20 @@
+# Changelog
+
+## [3.3.0] - 2026-05-14
+
+### Añadido
+- Script `actualizar.sh`: actualización sin perder configuración, con copia de seguridad automática
+- El instalador pregunta el usuario del sistema (no asume `pi`)
+- Compatible con Raspberry Pi 2B
+- Manual v3.3 con sección de actualización y nuevo paso de usuario en la instalación
+
+### Corregido
+- `instalar.sh`: servicio systemd usa el usuario real (`User=`, `Group=`, rutas) en lugar de `pi` hardcodeado
+- `tetra_oled.py`: `CACHE_FILE` usa `os.path.expanduser("~")` en lugar de `/home/pi/` hardcodeado
+- URL del script de instalación corregida en README e `instalar.sh` (mayúscula en `Tetra-oled-display`)
+
+---
+
 ## [3.2.0] - 2026-05-12
 
 ### Añadido
@@ -18,8 +35,6 @@
 - Script de instalación pregunta automáticamente qué pantalla tiene el usuario
 
 ---
-
-# Changelog
 
 ## [3.0.0] - 2026-05-10
 
