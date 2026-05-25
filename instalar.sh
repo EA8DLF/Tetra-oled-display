@@ -191,9 +191,9 @@ User=${RPIUSER}
 Group=${RPIUSER}
 WorkingDirectory=${RPIHOME}
 ExecStart=${RPIHOME}/oled-env/bin/python3 ${RPIHOME}/tetra_oled.py
-ExecStop=/bin/kill -SIGTERM \$MAINPID
+ExecStop=-/bin/kill -SIGTERM \$MAINPID
 TimeoutStopSec=5
-Restart=always
+Restart=on-failure
 RestartSec=3
 
 [Install]

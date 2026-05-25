@@ -50,23 +50,30 @@ API_URL   = f"{MONITOR_URL}/api/log-stream"
 STATS_URL = f"{MONITOR_URL}/api/system/stats"
 
 # ─── INIT PANTALLA ────────────────────────────────────────────
-i2c = busio.I2C(board.SCL, board.SDA)
+# Si no hay pantalla OLED en el bus I2C (p.ej. esta unidad usa la variante
+# TFT/Nextion), salir limpio (exit 0) en vez de petar y reiniciar en bucle.
+try:
+    i2c = busio.I2C(board.SCL, board.SDA)
 
-if DISPLAY_TYPE == "SH1107":
-    import adafruit_sh1107
-    oled   = adafruit_sh1107.SH1107_I2C(128, 128, i2c, addr=DISPLAY_ADDR, rotation=0)
-    WIDTH  = 128
-    HEIGHT = 128
-elif DISPLAY_TYPE == "SSD1327":
-    import adafruit_ssd1327
-    oled   = adafruit_ssd1327.SSD1327_I2C(128, 128, i2c, addr=DISPLAY_ADDR)
-    WIDTH  = 128
-    HEIGHT = 128
-else:
-    import adafruit_ssd1306
-    oled   = adafruit_ssd1306.SSD1306_I2C(128, 64, i2c, addr=DISPLAY_ADDR)
-    WIDTH  = 128
-    HEIGHT = 64
+    if DISPLAY_TYPE == "SH1107":
+        import adafruit_sh1107
+        oled   = adafruit_sh1107.SH1107_I2C(128, 128, i2c, addr=DISPLAY_ADDR, rotation=0)
+        WIDTH  = 128
+        HEIGHT = 128
+    elif DISPLAY_TYPE == "SSD1327":
+        import adafruit_ssd1327
+        oled   = adafruit_ssd1327.SSD1327_I2C(128, 128, i2c, addr=DISPLAY_ADDR)
+        WIDTH  = 128
+        HEIGHT = 128
+    else:
+        import adafruit_ssd1306
+        oled   = adafruit_ssd1306.SSD1306_I2C(128, 64, i2c, addr=DISPLAY_ADDR)
+        WIDTH  = 128
+        HEIGHT = 64
+except Exception as e:
+    print(f"[oled] No se detecta pantalla {DISPLAY_TYPE} (I2C 0x{DISPLAY_ADDR:02X}): {e}", flush=True)
+    print("[oled] Esta unidad no tiene OLED (¿variante TFT?). Saliendo sin reintentar.", flush=True)
+    raise SystemExit(0)
 
 print(f"[oled] Pantalla: {DISPLAY_TYPE} {WIDTH}x{HEIGHT} en 0x{DISPLAY_ADDR:02X}")
 
