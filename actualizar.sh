@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ═══════════════════════════════════════════════════════════════
-#  TETRA OLED Display - Script de actualización v3.1
+#  TETRA OLED Display - Script de actualización v3.4.2
 #  Jose Maria - EA8DLF · 2026
 #  https://github.com/EA8DLF/Tetra-oled-display
 # ═══════════════════════════════════════════════════════════════

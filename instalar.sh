@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ═══════════════════════════════════════════════════════════════
-#  TETRA OLED Display - Script de instalación v3.1
+#  TETRA OLED Display - Script de instalación v3.4.2
 #  Jose Maria - EA8DLF · 2026
 #  https://github.com/EA8DLF/Tetra-oled-display
 # ═══════════════════════════════════════════════════════════════
@@ -16,7 +16,7 @@ info() { echo -e "${YELLOW}[INFO]${NC} $1"; }
 err()  { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
 echo "════════════════════════════════════════"
-echo "  TETRA OLED Display - Instalación v3.1"
+echo "  TETRA OLED Display - Instalación v3.4.2"
 echo "  Jose Maria - EA8DLF · 2026"
 echo "════════════════════════════════════════"
 
