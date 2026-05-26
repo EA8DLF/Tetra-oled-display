@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.4.1] - 2026-05-26
+
+### Corregido
+- **Maquetación 128×128 (SH1107/SSD1327)**: el ISSI ya no se corta (la cabecera usaba una fuente de 16px que no cabía en 128px; ahora usa 14px y entran los 7 dígitos). En standby, temperatura y voltaje van en líneas separadas en vez de solaparse (`33.1°C` / `5.0V OK`)
+- **Conexión I2C con reintentos al arrancar**: se intenta 5 veces antes de rendirse, por si el bus aún no está listo al iniciar el sistema (antes salía al primer fallo)
+
+### Cambiado
+- **Instalación a 100 kHz**: `instalar.sh` ya no fuerza el bus I2C a 400 kHz (causa frecuente de `I2C device not found` en SSD1327 y módulos con cables largos); usa la velocidad estándar de 100 kHz. `actualizar.sh` baja de 400→100 kHz si detecta la configuración antigua (avisa de reiniciar). Ambos detectan la ruta de `config.txt` (`/boot/firmware/` o `/boot/`)
+
+---
+
 ## [3.4.0] - 2026-05-26
 
 ### Corregido

@@ -77,36 +77,42 @@ class _LumaAdapter:
         self.device.hide()
 
 # ─── INIT PANTALLA ────────────────────────────────────────────
-# Si no hay pantalla OLED en el bus I2C (p.ej. esta unidad usa la variante
-# TFT/Nextion), salir limpio (exit 0) en vez de petar y reiniciar en bucle.
-try:
+# Devuelve (oled, WIDTH, HEIGHT) según el tipo de pantalla configurado.
+def _init_display():
     if DISPLAY_TYPE == "SH1107":
         # luma.oled — pantalla monocroma 128x128
         from luma.core.interface.serial import i2c as _luma_i2c
         from luma.oled.device import sh1107 as _luma_sh1107
-        oled   = _LumaAdapter(_luma_sh1107(_luma_i2c(port=1, address=DISPLAY_ADDR),
-                                           width=128, height=128, rotate=0))
-        WIDTH  = 128
-        HEIGHT = 128
-    elif DISPLAY_TYPE == "SSD1327":
+        return _LumaAdapter(_luma_sh1107(_luma_i2c(port=1, address=DISPLAY_ADDR),
+                                         width=128, height=128, rotate=0)), 128, 128
+    if DISPLAY_TYPE == "SSD1327":
         # luma.oled — pantalla en escala de grises 128x128
         from luma.core.interface.serial import i2c as _luma_i2c
         from luma.oled.device import ssd1327 as _luma_ssd1327
-        oled   = _LumaAdapter(_luma_ssd1327(_luma_i2c(port=1, address=DISPLAY_ADDR),
-                                            width=128, height=128))
-        WIDTH  = 128
-        HEIGHT = 128
-    else:
-        # Adafruit framebuf — SSD1306 0.96" 128x64
-        import board, busio
-        import adafruit_ssd1306
-        i2c    = busio.I2C(board.SCL, board.SDA)
-        oled   = adafruit_ssd1306.SSD1306_I2C(128, 64, i2c, addr=DISPLAY_ADDR)
-        WIDTH  = 128
-        HEIGHT = 64
-except Exception as e:
-    print(f"[oled] No se detecta pantalla {DISPLAY_TYPE} (I2C 0x{DISPLAY_ADDR:02X}): {e}", flush=True)
-    print("[oled] Esta unidad no tiene OLED (¿variante TFT?). Saliendo sin reintentar.", flush=True)
+        return _LumaAdapter(_luma_ssd1327(_luma_i2c(port=1, address=DISPLAY_ADDR),
+                                          width=128, height=128)), 128, 128
+    # Adafruit framebuf — SSD1306 0.96" 128x64
+    import board, busio
+    import adafruit_ssd1306
+    i2c = busio.I2C(board.SCL, board.SDA)
+    return adafruit_ssd1306.SSD1306_I2C(128, 64, i2c, addr=DISPLAY_ADDR), 128, 64
+
+# Reintentamos varias veces: al arrancar el sistema el bus I2C puede tardar
+# un momento en estar listo. Si tras los intentos no hay pantalla (p.ej. esta
+# unidad usa la variante TFT/Nextion), salimos limpio (exit 0) en vez de
+# petar y reiniciar en bucle.
+oled = None
+for _intento in range(1, 6):
+    try:
+        oled, WIDTH, HEIGHT = _init_display()
+        break
+    except Exception as e:
+        print(f"[oled] Intento {_intento}/5: no se detecta {DISPLAY_TYPE} "
+              f"(I2C 0x{DISPLAY_ADDR:02X}): {e}", flush=True)
+        time.sleep(2)
+if oled is None:
+    print("[oled] Sin pantalla OLED tras 5 intentos. ¿Variante TFT/Nextion? "
+          "Saliendo sin reintentar.", flush=True)
     raise SystemExit(0)
 
 print(f"[oled] Pantalla: {DISPLAY_TYPE} {WIDTH}x{HEIGHT} en 0x{DISPLAY_ADDR:02X}")
@@ -359,9 +365,8 @@ def show_standby():
         hora = hora_local()
         hw = font_xl.getbbox(hora)[2] - font_xl.getbbox(hora)[0]
         draw.text(((WIDTH - hw) // 2 + sx, 28 + sy), hora, font=font_xl, fill=1)
-        # Temperatura
-        draw.text((4 + sx, 58 + sy), f"Temp:", font=font_med, fill=1)
-        draw.text((4 + sx, 73 + sy), f"{temp:.1f}\u00b0C", font=font_lg, fill=1)
+        # Temperatura y voltaje en l\u00edneas separadas (evita que se solapen)
+        draw.text((4 + sx, 55 + sy), f"{temp:.1f}\u00b0C", font=font_lg, fill=1)
         # Voltaje
         if volt == 5.0:
             volt_txt = "5.0V OK"
@@ -370,12 +375,11 @@ def show_standby():
         else:
             volt_txt = ""
         if volt_txt:
-            vw = font_lg.getbbox(volt_txt)[2] - font_lg.getbbox(volt_txt)[0]
-            draw.text((WIDTH - vw - 4 - sx, 73 + sy), volt_txt, font=font_lg, fill=1)
-        # IP
-        draw.text((4 + sx, 100 + sy), f"IP {ip}", font=font_med, fill=1)
+            draw.text((4 + sx, 74 + sy), volt_txt, font=font_lg, fill=1)
         # Línea separadora
         draw.line((0, 95+sy, WIDTH, 95+sy), fill=1, width=1)
+        # IP
+        draw.text((4 + sx, 100 + sy), f"IP {ip}", font=font_med, fill=1)
     else:
         # Layout 128x64 — original
         draw.rectangle((sx, sy, WIDTH-1-sx, 15+sy), fill=1)
@@ -409,7 +413,7 @@ def _render_event(issi, tipo, sds_text, issi_dst):
     if DISPLAY_TYPE in ("SH1107", "SSD1327"):
         # Layout 128x128 — más espacioso y legible
         draw.rectangle((0, 0, WIDTH-1, 20), fill=1)
-        draw.text((2, 2), truncate(f"{callsign} {issi}", font_lg, WIDTH-4), font=font_lg, fill=0)
+        draw.text((2, 3), truncate(f"{callsign} {issi}", font_big, WIDTH-4), font=font_big, fill=0)
         draw.text((2, 24), truncate(name, font_med, WIDTH-4), font=font_med, fill=1)
         draw.text((2, 42), truncate(provincia, font_small, WIDTH-4), font=font_small, fill=1)
         draw.line((0, 58, WIDTH, 58), fill=1, width=1)

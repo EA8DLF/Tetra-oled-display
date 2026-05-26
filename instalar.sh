@@ -35,13 +35,18 @@ ok "Usuario: $RPIUSER  |  Home: $RPIHOME"
 # ── 1. CONFIGURAR I2C ─────────────────────────────────────────
 info "Activando I2C..."
 sudo raspi-config nonint do_i2c 0
+# La ruta de config.txt cambia según la versión de Raspberry Pi OS
 CONFIG=/boot/firmware/config.txt
-if grep -q "dtparam=i2c_arm=on" $CONFIG; then
-    sudo sed -i 's/dtparam=i2c_arm=on.*/dtparam=i2c_arm=on,i2c_arm_baudrate=400000/' $CONFIG
+[ -f "$CONFIG" ] || CONFIG=/boot/config.txt
+# Velocidad estándar (100kHz): más fiable con módulos OLED baratos y cables
+# de puente largos. Los 400kHz provocaban errores de I2C ("device not found")
+# en pantallas SSD1327 y similares.
+if grep -q "dtparam=i2c_arm" "$CONFIG"; then
+    sudo sed -i 's/dtparam=i2c_arm=on.*/dtparam=i2c_arm=on/' "$CONFIG"
 else
-    echo "dtparam=i2c_arm=on,i2c_arm_baudrate=400000" | sudo tee -a $CONFIG
+    echo "dtparam=i2c_arm=on" | sudo tee -a "$CONFIG"
 fi
-ok "I2C configurado a 400kHz"
+ok "I2C activado a velocidad estándar (100kHz)"
 
 # ── 2. ZONA HORARIA ───────────────────────────────────────────
 info "Configurando zona horaria..."

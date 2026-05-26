@@ -226,6 +226,15 @@ sudo journalctl -u tetra-oled -f     # logs en tiempo real
 - Activa I2C si no está: `sudo raspi-config` → Interface Options → I2C → Enable
 - Si no aparece, prueba con Pin 2 (5V) en lugar de Pin 1 (3.3V)
 
+**El log dice `I2C device not found on address: 0x3C` (aunque `i2cdetect` sí ve `3c`)**
+- Es un fallo de comunicación, típico de módulos SSD1327 baratos o cables de puente largos a 400 kHz. Baja el bus a 100 kHz y reinicia:
+  ```bash
+  sudo sed -i 's/dtparam=i2c_arm=on.*/dtparam=i2c_arm=on/' /boot/firmware/config.txt
+  sudo reboot
+  ```
+  (En Raspberry Pi antiguas el archivo es `/boot/config.txt`.)
+- Reasienta los 4 cables y usa cables cortos. Si sigue, prueba VCC en el Pin 2 (5V).
+
 **El servicio no arranca**
 - `sudo systemctl status tetra-oled` → ver el error
 - Comprueba que el entorno virtual existe: `ls ~/oled-env/bin/python3`

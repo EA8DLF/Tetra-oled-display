@@ -93,6 +93,19 @@ if [ "$DISPLAY_TYPE" = "SH1107" ] || [ "$DISPLAY_TYPE" = "SSD1327" ]; then
     ok "luma.oled instalada"
 fi
 
+# ── 6c. VELOCIDAD I2C SEGURA ──────────────────────────────────
+# Versiones antiguas forzaban el bus a 400kHz, lo que rompe algunos SSD1327
+# (error "I2C device not found"). Lo bajamos a la velocidad estándar (100kHz).
+NEEDS_REBOOT=0
+CONFIG=/boot/firmware/config.txt
+[ -f "$CONFIG" ] || CONFIG=/boot/config.txt
+if grep -q "i2c_arm_baudrate=400000" "$CONFIG" 2>/dev/null; then
+    info "Bajando el bus I2C de 400kHz a 100kHz (más fiable)..."
+    sudo sed -i 's/dtparam=i2c_arm=on.*/dtparam=i2c_arm=on/' "$CONFIG"
+    NEEDS_REBOOT=1
+    ok "I2C a 100kHz (requiere reinicio para aplicarse)"
+fi
+
 # ── 7. ACTUALIZAR SERVICIO SYSTEMD ────────────────────────────
 info "Actualizando servicio systemd..."
 sudo tee /etc/systemd/system/tetra-oled.service > /dev/null << SVCEOF
@@ -119,15 +132,20 @@ sudo systemctl daemon-reload
 ok "Servicio systemd actualizado"
 
 # ── 8. REINICIAR ──────────────────────────────────────────────
-info "Reiniciando servicio..."
-sudo systemctl start tetra-oled
-sleep 2
-if sudo systemctl is-active --quiet tetra-oled; then
-    ok "Servicio activo y corriendo"
+if [ "$NEEDS_REBOOT" = "1" ]; then
+    echo -e "${YELLOW}[IMPORTANTE]${NC} Se cambió la velocidad del bus I2C."
+    echo "  REINICIA la Raspberry Pi para que la pantalla funcione:  sudo reboot"
 else
-    echo -e "${RED}[ERROR]${NC} El servicio no arrancó. Revisa los logs:"
-    echo "  sudo journalctl -u tetra-oled -f"
-    exit 1
+    info "Reiniciando servicio..."
+    sudo systemctl start tetra-oled
+    sleep 2
+    if sudo systemctl is-active --quiet tetra-oled; then
+        ok "Servicio activo y corriendo"
+    else
+        echo -e "${RED}[ERROR]${NC} El servicio no arrancó. Revisa los logs:"
+        echo "  sudo journalctl -u tetra-oled -f"
+        exit 1
+    fi
 fi
 
 # ── 9. RESUMEN ────────────────────────────────────────────────
