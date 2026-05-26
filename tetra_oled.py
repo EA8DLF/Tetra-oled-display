@@ -9,7 +9,7 @@
 import re, json, time, requests, threading, os, csv, signal, sys, random, math, subprocess, socket
 from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
-import board, busio, pytz
+import pytz
 
 # ─── CONFIGURACIÓN ────────────────────────────────────────────
 # Nombre del servicio systemd de tu bluestation
@@ -49,24 +49,58 @@ SCREEN_OFF_TIMEOUT   = 300  # segundos hasta apagar pantalla (5 min)
 API_URL   = f"{MONITOR_URL}/api/log-stream"
 STATS_URL = f"{MONITOR_URL}/api/system/stats"
 
+# ─── ADAPTADOR LUMA ───────────────────────────────────────────
+# SH1107 y SSD1327 se manejan con luma.oled, cuya API difiere de la de
+# Adafruit (framebuf). Este adaptador la envuelve para que el resto del
+# código siga usando los mismos métodos: image() / show() / fill() /
+# contrast() / poweron() / poweroff().
+class _LumaAdapter:
+    def __init__(self, device):
+        self.device = device
+        self._buf   = None
+    def image(self, img):
+        self._buf = img
+    def show(self):
+        if self._buf is None:
+            return
+        img = self._buf
+        if img.mode != self.device.mode:
+            img = img.convert(self.device.mode)
+        self.device.display(img)
+    def fill(self, color):
+        self._buf = Image.new("1", self.device.size, color)
+    def contrast(self, value):
+        self.device.contrast(max(0, min(255, int(value))))
+    def poweron(self):
+        self.device.show()
+    def poweroff(self):
+        self.device.hide()
+
 # ─── INIT PANTALLA ────────────────────────────────────────────
 # Si no hay pantalla OLED en el bus I2C (p.ej. esta unidad usa la variante
 # TFT/Nextion), salir limpio (exit 0) en vez de petar y reiniciar en bucle.
 try:
-    i2c = busio.I2C(board.SCL, board.SDA)
-
     if DISPLAY_TYPE == "SH1107":
-        import adafruit_sh1107
-        oled   = adafruit_sh1107.SH1107_I2C(128, 128, i2c, addr=DISPLAY_ADDR, rotation=0)
+        # luma.oled — pantalla monocroma 128x128
+        from luma.core.interface.serial import i2c as _luma_i2c
+        from luma.oled.device import sh1107 as _luma_sh1107
+        oled   = _LumaAdapter(_luma_sh1107(_luma_i2c(port=1, address=DISPLAY_ADDR),
+                                           width=128, height=128, rotate=0))
         WIDTH  = 128
         HEIGHT = 128
     elif DISPLAY_TYPE == "SSD1327":
-        import adafruit_ssd1327
-        oled   = adafruit_ssd1327.SSD1327_I2C(128, 128, i2c, addr=DISPLAY_ADDR)
+        # luma.oled — pantalla en escala de grises 128x128
+        from luma.core.interface.serial import i2c as _luma_i2c
+        from luma.oled.device import ssd1327 as _luma_ssd1327
+        oled   = _LumaAdapter(_luma_ssd1327(_luma_i2c(port=1, address=DISPLAY_ADDR),
+                                            width=128, height=128))
         WIDTH  = 128
         HEIGHT = 128
     else:
+        # Adafruit framebuf — SSD1306 0.96" 128x64
+        import board, busio
         import adafruit_ssd1306
+        i2c    = busio.I2C(board.SCL, board.SDA)
         oled   = adafruit_ssd1306.SSD1306_I2C(128, 64, i2c, addr=DISPLAY_ADDR)
         WIDTH  = 128
         HEIGHT = 64
@@ -274,7 +308,7 @@ def truncate(text, font, max_width):
     return text[:lo]
 
 def oled_display(img):
-    """Muestra imagen en pantalla compatible con SSD1306 y SH1107."""
+    """Muestra imagen en pantalla compatible con SSD1306, SH1107 y SSD1327."""
     with lock:
         oled.image(img)
         oled.show()

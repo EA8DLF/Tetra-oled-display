@@ -147,14 +147,14 @@ case $display_opt in
     2)
         DISPLAY_TYPE="SH1107"
         ok "Pantalla: SH1107 128x128"
-        sudo -u "$RPIUSER" "$RPIHOME/oled-env/bin/pip" install adafruit-circuitpython-sh1107 -q
-        ok "Librería SH1107 instalada"
+        sudo -u "$RPIUSER" "$RPIHOME/oled-env/bin/pip" install luma.oled -q
+        ok "Librería luma.oled instalada (SH1107)"
         ;;
     3)
         DISPLAY_TYPE="SSD1327"
         ok "Pantalla: SSD1327 128x128 (escala de grises)"
-        sudo -u "$RPIUSER" "$RPIHOME/oled-env/bin/pip" install adafruit-circuitpython-ssd1327 -q
-        ok "Librería SSD1327 instalada"
+        sudo -u "$RPIUSER" "$RPIHOME/oled-env/bin/pip" install luma.oled -q
+        ok "Librería luma.oled instalada (SSD1327)"
         ;;
     *)
         DISPLAY_TYPE="SSD1306"

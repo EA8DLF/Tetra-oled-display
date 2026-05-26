@@ -84,6 +84,15 @@ sed -i "s|DISPLAY_TYPE         = \"SSD1306\"|DISPLAY_TYPE         = \"${DISPLAY_
 sed -i "s|DISPLAY_ADDR         = 0x3C|DISPLAY_ADDR         = ${DISPLAY_ADDR}|"                 "$SCRIPT"
 ok "Configuración restaurada"
 
+# ── 6b. DEPENDENCIA DE PANTALLA ───────────────────────────────
+# SH1107 y SSD1327 usan luma.oled. Aseguramos que esté instalada en el venv
+# (las versiones antiguas instalaban librerías Adafruit incompatibles).
+if [ "$DISPLAY_TYPE" = "SH1107" ] || [ "$DISPLAY_TYPE" = "SSD1327" ]; then
+    info "Asegurando librería luma.oled para $DISPLAY_TYPE..."
+    sudo -u "$RPIUSER" "$RPIHOME/oled-env/bin/pip" install luma.oled -q
+    ok "luma.oled instalada"
+fi
+
 # ── 7. ACTUALIZAR SERVICIO SYSTEMD ────────────────────────────
 info "Actualizando servicio systemd..."
 sudo tee /etc/systemd/system/tetra-oled.service > /dev/null << SVCEOF

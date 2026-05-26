@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.4.0] - 2026-05-26
+
+### Corregido
+- **SSD1327** y **SH1107** ahora funcionan de verdad. Las versiones anteriores intentaban usar librerías Adafruit incompatibles: `adafruit-circuitpython-sh1107` no existe en PyPI (abortaba la instalación) y `adafruit-circuitpython-ssd1327` es `displayio`, sin los métodos `image()/show()/contrast()` que usa el código (el servicio se cerraba con "no se detecta pantalla")
+- Ambas pantallas se manejan ahora con **`luma.oled`** mediante un adaptador que mantiene la misma API interna. El **SSD1306 no cambia** (sigue con Adafruit framebuf, probado)
+- `instalar.sh` y `actualizar.sh`: instalan `luma.oled` al elegir SH1107 o SSD1327. `actualizar.sh` también la instala si ya tenías esas pantallas configuradas
+
+> Nota: SSD1306 verificado. SH1107 y SSD1327 implementados sobre `luma.oled` (API estable y documentada) pero **pendientes de validar en hardware real** — se agradece confirmación de quien los tenga.
+
+---
+
 ## [3.3.2] - 2026-05-26
 
 ### Corregido
