@@ -1,6 +1,6 @@
 # TETRA OLED Display
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/EA8DLF/Tetra-oled-display/blob/main/LICENSE) [![Version](https://img.shields.io/badge/version-3.1.0-green.svg)](https://github.com/EA8DLF/Tetra-oled-display/blob/main/CHANGELOG.md) [![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi-red.svg)](https://www.raspberrypi.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/EA8DLF/Tetra-oled-display/blob/main/LICENSE) [![Version](https://img.shields.io/badge/version-3.4.2-green.svg)](https://github.com/EA8DLF/Tetra-oled-display/blob/main/CHANGELOG.md) [![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi-red.svg)](https://www.raspberrypi.org/)
 
 **Autor:** Jose Maria — EA8DLF  
 **Compatible con:** [tetra-bluestation](https://github.com/MidnightBlueLabs/tetra-bluestation) · MidnightBlueLabs

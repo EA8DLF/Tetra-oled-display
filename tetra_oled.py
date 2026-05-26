@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # ═══════════════════════════════════════════════════════════════
-#  TETRA OLED Display v3.1
+#  TETRA OLED Display v3.4.2
 #  Jose Maria - EA8DLF · 2026
 #  https://github.com/EA8DLF/Tetra-oled-display
 #  Compatible con SSD1306 (128x64), SH1107 (128x128) y SSD1327 (128x128)
