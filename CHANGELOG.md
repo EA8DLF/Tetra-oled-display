@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.2] - 2026-05-26
+
+### Corregido
+- Servicio systemd: eliminada la línea `ExecStop=/bin/kill -SIGTERM $MAINPID` (redundante en `Type=simple`) que volcaba la ayuda de `kill` en los logs al parar el servicio si `$MAINPID` ya estaba vacío. Sustituida por `KillSignal=SIGTERM` en `instalar.sh` y `actualizar.sh`
+
+---
+
 ## [3.3.1] - 2026-05-14
 
 ### Corregido
