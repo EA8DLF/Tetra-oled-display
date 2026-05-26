@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.4.2] - 2026-05-26
+
+### Añadido
+- `Docs/preview/preview.py`: emulador que renderiza todas las pantallas (arranque, standby, voz, SDS) de cada modelo a PNG **sin necesidad de hardware**, ejecutando el código real de `tetra_oled.py`. Portable (DejaVu en Linux/Pi, Consolas en Windows), solo requiere Pillow
+- Vistas previas renderizadas de SSD1306, SH1107 y SSD1327 en `Docs/preview/`, embebidas en el README
+
+---
+
 ## [3.4.1] - 2026-05-26
 
 ### Corregido

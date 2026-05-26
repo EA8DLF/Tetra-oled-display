@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Imágenes: binarias, sin normalización de saltos de línea
+*.png binary

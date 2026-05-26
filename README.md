@@ -118,6 +118,20 @@ systemctl list-units --type=service | grep -iE "tetra|bluestation|tmo"
 
 ## Pantallas
 
+### Vista previa por modelo
+
+Renderizado real de las pantallas (generado con [`Docs/preview/preview.py`](Docs/preview/), sin hardware):
+
+**SSD1306 — 0.96" 128×64**
+
+![SSD1306](Docs/preview/preview_ssd1306.png)
+
+**SH1107 / SSD1327 — 1.5" 128×128** (mismo diseño; SSD1327 en escala de grises)
+
+![SSD1327](Docs/preview/preview_ssd1327.png)
+
+> Para regenerarlas: `pip install pillow && python Docs/preview/preview.py`
+
 ### Standby
 
 ```
