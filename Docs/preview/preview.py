@@ -20,7 +20,9 @@ OUT  = HERE
 
 # ── Fuentes monoespaciadas: DejaVu en Linux/Pi, Consolas en Windows ──
 def find_mono(bold):
+    dejavu_dir = os.environ.get("DEJAVU_DIR", "")
     for c in (
+        os.path.join(dejavu_dir, "DejaVuSansMono%s.ttf" % ("-Bold" if bold else "")) if dejavu_dir else "",
         "/usr/share/fonts/truetype/dejavu/DejaVuSansMono%s.ttf" % ("-Bold" if bold else ""),
         os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts",
                      "consolab.ttf" if bold else "consola.ttf"),
@@ -71,26 +73,31 @@ def install_fakes():
     dev = mod("luma.oled.device")
     dev.ssd1327 = lambda serial=None, width=128, height=128, **k: RecLuma("RGB", (width, height))
     dev.sh1107  = lambda serial=None, width=128, height=128, **k: RecLuma("1",   (width, height))
+    dev.sh1106  = lambda serial=None, width=128, height=64, **k: RecLuma("1",   (width, height))
     b = mod("board"); b.SCL = 0; b.SDA = 1
     bu = mod("busio"); bu.I2C = lambda *a, **k: object()
     ada = mod("adafruit_ssd1306"); ada.SSD1306_I2C = lambda w, h, i2c, **k: RecAdafruit(w, h)
 
-def load_module(display_type):
+def load_module(display_type, size=(0, 0)):
+    # Sin archivo de configuración: se usan los valores del script
+    os.environ["TETRA_OLED_CONF"] = os.path.join(HERE, "no-existe.conf")
     src = open(REPO, "r", encoding="utf-8").read()
     src = src.replace('DISPLAY_TYPE         = "SSD1306"',
                       'DISPLAY_TYPE         = "%s"' % display_type, 1)
+    src = src.replace("DISPLAY_WIDTH        = 0", "DISPLAY_WIDTH        = %d" % size[0], 1)
+    src = src.replace("DISPLAY_HEIGHT       = 0", "DISPLAY_HEIGHT       = %d" % size[1], 1)
     g = {"__name__": "tetra_preview"}
     exec(compile(src, "tetra_oled_preview", "exec"), g)
     return g
 
-SAMPLE_DB = {
-    "2150212": {"callsign": "EA8DLF", "name": "Jose Maria",     "city": "Las Palmas", "state": "Las Palmas"},
-    "2145007": {"callsign": "EA7KEN", "name": "Pedro Martinez", "city": "Sevilla",    "state": "Sevilla"},
+SAMPLE_DB = {  # issi → (indicativo, nombre, provincia)
+    "2150212": ("EA8DLF", "Jose Maria",     "Las Palmas"),
+    "2145007": ("EA7KEN", "Pedro Martinez", "Sevilla"),
 }
-SAMPLE_STATS = {"cpuTemp": 33.1, "voltage": 5.0, "localIp": "192.168.1.193", "publicIp": ""}
+SAMPLE_STATS = {"cpuTemp": 33.1, "voltage": 5.0, "localIp": "192.168.1.193"}
 
-def render_screens(display_type):
-    g = load_module(display_type)
+def render_screens(display_type, size=(0, 0)):
+    g = load_module(display_type, size)
     g["radioid_db"] = dict(SAMPLE_DB)
     g["stats"].clear(); g["stats"].update(SAMPLE_STATS)
     oled = g["oled"]
@@ -99,7 +106,10 @@ def render_screens(display_type):
         return dev.last if dev.last is not None else Image.new("RGB", (g["WIDTH"], g["HEIGHT"]), "black")
     shots = []
     g["show_splash"]("Iniciando...");                                shots.append(("Arranque", grab()))
-    g["show_standby"]();                                             shots.append(("Standby", grab()))
+    g["show_standby"]();                                             shots.append(("Reposo (sin actividad)", grab()))
+    g["add_heard"]("2145007", "TG 214"); g["add_heard"]("2150212", "TG 9990")
+    g["_scroll"][0] = 40
+    g["show_standby"]();                                             shots.append(("Reposo (ultimos oidos)", grab()))
     g["show_event"]("2150212", "VOZ", sds_text="TG:9990");           shots.append(("Voz - Grupo", grab()))
     g["show_event"]("2150212", "VOZ PRIV", issi_dst="2145007");      shots.append(("Voz - Privada", grab()))
     g["show_event"]("2145007", "NET VOZ", sds_text="TG:214");        shots.append(("Voz de red", grab()))
@@ -131,5 +141,6 @@ if __name__ == "__main__":
     install_fakes()
     montage(render_screens("SSD1327"), 3, 3, "SSD1327  -  128x128 (escala de grises)", os.path.join(OUT, "preview_ssd1327.png"))
     montage(render_screens("SH1107"),  3, 3, "SH1107  -  128x128 (monocromo)",         os.path.join(OUT, "preview_sh1107.png"))
-    montage(render_screens("SSD1306"), 4, 3, "SSD1306  -  128x64 (monocromo)",          os.path.join(OUT, "preview_ssd1306.png"))
+    montage(render_screens("SSD1306"), 4, 3, "SSD1306 / SH1106  -  128x64 (monocromo)", os.path.join(OUT, "preview_ssd1306.png"))
+    montage(render_screens("SSD1306", (128, 32)), 4, 3, "SSD1306  -  128x32 (0.91\")", os.path.join(OUT, "preview_128x32.png"))
     print("OK")

@@ -1,5 +1,38 @@
 # Changelog
 
+## [3.5.0] - 2026-09-17
+
+### Añadido
+- **Reposo con últimos oídos**: en vez de apagarse, la pantalla muestra la hora y los últimos indicativos oídos (indicativo, nombre, ISSI, TG y hora) desplazándose. `idle_mode = clock` recupera el reposo clásico
+- **Detección automática** (`display_type = AUTO`, `display_addr = 0`): busca la pantalla en 0x3C/0x3D y lee su registro de estado para saber si es SSD1306, SH1106 o SH1107
+- **Más pantallas**: SH1106 (1.3") y SSD1306 de 0.91" (128×32), con diseño compacto para pantallas bajas
+- **Giro** de 0/90/180/270° y **brillo** configurable con actividad y en reposo
+- **`/etc/tetra-oled.conf`**: la configuración sale del script, así las actualizaciones no la tocan y ya no se modifica el código con `sed`. `actualizar.sh` la migra desde versiones anteriores
+- Vista previa de 128×32 y del nuevo reposo en `Docs/preview/`
+
+### Corregido
+- **El texto de las SDS se descartaba** siempre que había destino (en todas las SDS); ahora se muestra cuando el log de la estación lo incluye
+- **Aviso «VOLT» permanente**: solo se enciende con subtensión actual (bit 0 de `get_throttled`), no por sucesos pasados ni límites de temperatura
+- **Eventos antiguos al arrancar**: `journalctl` repetía las 10 últimas líneas; ahora solo lee lo nuevo (`-n 0`)
+- **Bloqueo al parar el servicio** si la señal llegaba mientras se dibujaba
+- **Carreras entre hilos** con la lista de llamadas activas (ahora protegida)
+- **Llamadas largas**: ya no pasan a reposo a los 30 s mientras siguen activas (tope de seguridad de 5 min)
+- **Fin de llamada local** de FlowStation: se reconocen también `Hangtime expired` y `Call timeout expired`
+- **RadioID**: una descarga fallida lanzaba nuevas descargas en paralelo cada 10-30 s; ahora hay un solo hilo que reintenta cada hora. La descarga va a un temporal, así que un corte ya no deja un CSV truncado dado por bueno durante 24 h. La base se guarda en tuplas (bastante menos RAM)
+- **Falsos «Apagando...»**: el script mostraba el aviso con cualquier línea del log que contuviera «shutdown» o «reboot»; ahora el aviso sale solo de la señal de systemd
+- **Bucle a tope de CPU** si `journalctl` terminaba al momento (p.ej. sin permisos): ahora espera y lo indica en el log
+- Cabecera duplicada para ISSI sin indicativo (`ISSI:2150212 2150212` → `ISSI 2150212`)
+- Reintentos de arranque: cada intento vuelve a detectar la pantalla
+
+### Cambiado
+- **Sin consultas externas innecesarias**: se eliminan las peticiones a `api.ipify.org` (cada 30 s) y `ip-api.com` (HTTP sin cifrar), que solo servían para una zona horaria que no se usaba. La hora es la del sistema. Ya no hace falta `pytz`
+- El servicio corre con `Nice=10` y la marquesina refresca cada 0,2 s (≈3 % de un núcleo en una Pi 5); `TimeoutStopSec` sube a 8 s para que dé tiempo a mostrar el rótulo de parada
+- La señal de parada ya no dibuja desde el manejador (podía colgar el proceso a mitad de una escritura I2C): el bucle principal muestra «Detenido», «Reiniciando...» o «Apagando...» y apaga la pantalla
+- `instalar.sh` y `actualizar.sh` descargan con `curl -f`, verifican el script antes de instalarlo y no dejan nada a medias si falla la descarga
+- El instalador solo instala las librerías de la pantalla elegida, añade el usuario al grupo `systemd-journal` si hace falta y funciona con usuarios cuya carpeta no está en `/home`
+- Eliminados `BREW_URL` (sin uso), el reposo con apagado a los 5 min por defecto (`screen_off_timeout = 0`) y los `except:` genéricos
+
+---
 ## [3.4.2] - 2026-05-26
 
 ### Añadido
