@@ -1,6 +1,6 @@
 # TETRA OLED Display
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/EA8DLF/Tetra-oled-display/blob/main/LICENSE) [![Version](https://img.shields.io/badge/version-3.5.0-green.svg)](https://github.com/EA8DLF/Tetra-oled-display/blob/main/CHANGELOG.md) [![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi-red.svg)](https://www.raspberrypi.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/EA8DLF/Tetra-oled-display/blob/main/LICENSE) [![Version](https://img.shields.io/badge/version-3.5.1-green.svg)](https://github.com/EA8DLF/Tetra-oled-display/blob/main/CHANGELOG.md) [![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi-red.svg)](https://www.raspberrypi.org/)
 
 **Autor:** Jose Maria — EA8DLF  
 **Compatible con:** [tetra-bluestation](https://github.com/MidnightBlueLabs/tetra-bluestation) (MidnightBlueLabs) · [FlowStation](https://github.com/razvanzeces/flowstation)
@@ -136,6 +136,13 @@ radioid = yes                        # descargar indicativos y nombres de radioi
 ```
 
 > Si el archivo no existe, se usan los valores escritos al principio de `tetra_oled.py`.
+
+Variables de entorno opcionales (no suelen hacer falta, son para casos especiales):
+
+| Variable | Para qué |
+| --- | --- |
+| `TETRA_OLED_CONF` | Usar otra ruta de configuración en lugar de `/etc/tetra-oled.conf` (p.ej. para pruebas) |
+| `TETRA_OLED_FONT_DIR` | Carpeta de fuentes DejaVu, si tu distro no las deja en ninguna de las rutas habituales |
 
 ### Adaptar al nombre de tu servicio
 

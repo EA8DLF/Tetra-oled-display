@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ═══════════════════════════════════════════════════════════════
-#  TETRA OLED Display - Script de actualización v3.5.0
+#  TETRA OLED Display - Script de actualización v3.5.1
 #  Jose Maria - EA8DLF · 2026
 #  https://github.com/EA8DLF/Tetra-oled-display
 # ═══════════════════════════════════════════════════════════════
@@ -10,7 +10,7 @@ set -e
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 REPO="https://raw.githubusercontent.com/EA8DLF/Tetra-oled-display/main"
-CONF=/etc/tetra-oled.conf
+CONF="${TETRA_OLED_CONF:-/etc/tetra-oled.conf}"
 
 ok()   { echo -e "${GREEN}[OK]${NC} $1"; }
 info() { echo -e "${YELLOW}[INFO]${NC} $1"; }
@@ -22,7 +22,7 @@ conf_get() {
 }
 
 echo "════════════════════════════════════════"
-echo "  TETRA OLED Display - Actualización v3.5.0"
+echo "  TETRA OLED Display - Actualización v3.5.1"
 echo "  Jose Maria - EA8DLF · 2026"
 echo "════════════════════════════════════════"
 
@@ -37,6 +37,9 @@ SCRIPT="$RPIHOME/tetra_oled.py"
 if [ -z "$RPIHOME" ] || [ ! -f "$SCRIPT" ]; then
     err "No se encontró $SCRIPT. ¿Es correcto el usuario '$RPIUSER'?"
 fi
+# El grupo primario no siempre se llama igual que el usuario (depende de cómo
+# se creó la cuenta), así que se detecta en vez de asumir "$RPIUSER"
+RPIGROUP=$(id -gn "$RPIUSER" 2>/dev/null || echo "$RPIUSER")
 ok "Instalación encontrada en $RPIHOME"
 
 # ── 2. CONFIGURACIÓN ──────────────────────────────────────────
@@ -121,7 +124,7 @@ BACKUP="$RPIHOME/tetra_oled.py.bak_$(date +%Y%m%d_%H%M%S)"
 cp "$SCRIPT" "$BACKUP"
 ok "Copia guardada en $BACKUP"
 
-sudo install -m 644 -o "$RPIUSER" -g "$RPIUSER" "$TMP" "$SCRIPT"
+sudo install -m 644 -o "$RPIUSER" -g "$RPIGROUP" "$TMP" "$SCRIPT"
 rm -f "$TMP"
 ok "Script actualizado"
 
@@ -171,7 +174,7 @@ After=network.target ${SERVICE_NAME}
 [Service]
 Type=simple
 User=${RPIUSER}
-Group=${RPIUSER}
+Group=${RPIGROUP}
 WorkingDirectory=${RPIHOME}
 ExecStart=${RPIHOME}/oled-env/bin/python3 ${RPIHOME}/tetra_oled.py
 KillSignal=SIGTERM

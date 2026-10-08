@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # ═══════════════════════════════════════════════════════════════
-#  TETRA OLED Display v3.5.0
+#  TETRA OLED Display v3.5.1
 #  Jose Maria - EA8DLF · 2026
 #  https://github.com/EA8DLF/Tetra-oled-display
 #  Pantallas: SSD1306/SSD1309/SSD1315, SH1106, SH1107 y SSD1327
@@ -304,13 +304,34 @@ print(f"[oled] Pantalla: {DISPLAY_TYPE} {PANEL_SIZE[0]}x{PANEL_SIZE[1]} en 0x{DI
       f"giro {DISPLAY_ROTATE}, diseño {LAYOUT}", flush=True)
 
 # ─── FUENTES ──────────────────────────────────────────────────
+# Carpetas donde el paquete fonts-dejavu-core suele dejar las DejaVu según la
+# distro. TETRA_OLED_FONT_DIR permite indicar otra si ninguna coincide.
+_FONT_DIR_CANDIDATES = (
+    os.environ.get("TETRA_OLED_FONT_DIR", ""),
+    "/usr/share/fonts/truetype/dejavu",        # Debian / Raspberry Pi OS / Ubuntu
+    "/usr/share/fonts/dejavu",                 # Fedora / RHEL
+    "/usr/share/fonts/dejavu-sans-mono-fonts",  # Fedora (paquete alternativo)
+    "/usr/share/fonts/TTF",                    # Arch Linux
+)
+
+
+def _font_path(name):
+    """Primera ruta donde exista <name> entre las carpetas habituales de DejaVu."""
+    for d in _FONT_DIR_CANDIDATES:
+        if d:
+            p = os.path.join(d, name)
+            if os.path.exists(p):
+                return p
+    return name  # no se encontró: se deja caer al except de abajo
+
+
 try:
-    font_big   = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 14)
-    font_med   = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 11)
-    font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 10)
+    font_big   = ImageFont.truetype(_font_path("DejaVuSansMono-Bold.ttf"), 14)
+    font_med   = ImageFont.truetype(_font_path("DejaVuSansMono.ttf"), 11)
+    font_small = ImageFont.truetype(_font_path("DejaVuSansMono.ttf"), 10)
     if LAYOUT == "large":
-        font_xl  = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 20)
-        font_lg  = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 16)
+        font_xl  = ImageFont.truetype(_font_path("DejaVuSansMono-Bold.ttf"), 20)
+        font_lg  = ImageFont.truetype(_font_path("DejaVuSansMono-Bold.ttf"), 16)
     else:
         font_xl  = font_big
         font_lg  = font_big

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ═══════════════════════════════════════════════════════════════
-#  TETRA OLED Display - Script de instalación v3.5.0
+#  TETRA OLED Display - Script de instalación v3.5.1
 #  Jose Maria - EA8DLF · 2026
 #  https://github.com/EA8DLF/Tetra-oled-display
 # ═══════════════════════════════════════════════════════════════
@@ -10,7 +10,7 @@ set -e
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 REPO="https://raw.githubusercontent.com/EA8DLF/Tetra-oled-display/main"
-CONF=/etc/tetra-oled.conf
+CONF="${TETRA_OLED_CONF:-/etc/tetra-oled.conf}"
 
 ok()   { echo -e "${GREEN}[OK]${NC} $1"; }
 info() { echo -e "${YELLOW}[INFO]${NC} $1"; }
@@ -18,7 +18,7 @@ warn() { echo -e "${YELLOW}[AVISO]${NC} $1"; }
 err()  { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
 echo "════════════════════════════════════════"
-echo "  TETRA OLED Display - Instalación v3.5.0"
+echo "  TETRA OLED Display - Instalación v3.5.1"
 echo "  Jose Maria - EA8DLF · 2026"
 echo "════════════════════════════════════════"
 
@@ -32,7 +32,10 @@ RPIHOME=$(getent passwd "$RPIUSER" | cut -d: -f6)
 if [ -z "$RPIHOME" ] || [ ! -d "$RPIHOME" ]; then
     err "No se encuentra el usuario '$RPIUSER' o su carpeta personal."
 fi
-ok "Usuario: $RPIUSER  |  Home: $RPIHOME"
+# El grupo primario no siempre se llama igual que el usuario (depende de cómo
+# se creó la cuenta), así que se detecta en vez de asumir "$RPIUSER"
+RPIGROUP=$(id -gn "$RPIUSER" 2>/dev/null || echo "$RPIUSER")
+ok "Usuario: $RPIUSER  |  Home: $RPIHOME  |  Grupo: $RPIGROUP"
 
 # ── 1. CONFIGURAR I2C ─────────────────────────────────────────
 info "Activando I2C..."
@@ -205,7 +208,7 @@ TMP=$(mktemp)
 # -f: si GitHub devuelve un error no se guarda la página de error como script
 curl -fsSL "${REPO}/tetra_oled.py" -o "$TMP" || err "No se pudo descargar tetra_oled.py"
 python3 -m py_compile "$TMP" || err "El archivo descargado no es válido"
-sudo install -m 644 -o "$RPIUSER" -g "$RPIUSER" "$TMP" "$RPIHOME/tetra_oled.py"
+sudo install -m 644 -o "$RPIUSER" -g "$RPIGROUP" "$TMP" "$RPIHOME/tetra_oled.py"
 rm -f "$TMP"
 ok "Script instalado en $RPIHOME/tetra_oled.py"
 
@@ -264,7 +267,7 @@ After=network.target ${SERVICE_NAME}
 [Service]
 Type=simple
 User=${RPIUSER}
-Group=${RPIUSER}
+Group=${RPIGROUP}
 WorkingDirectory=${RPIHOME}
 ExecStart=${RPIHOME}/oled-env/bin/python3 ${RPIHOME}/tetra_oled.py
 KillSignal=SIGTERM

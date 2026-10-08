@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.5.1] - 2026-10-08
+
+### Cambiado
+- **Portabilidad**: revisión para que cualquiera pueda clonar el repo y usarlo en su propio hardware/usuario sin tocar código
+  - `instalar.sh` / `actualizar.sh`: el grupo del servicio systemd (`Group=`) ya no asume que coincide con el nombre de usuario; se detecta con `id -gn` (fallaba si la cuenta tenía un grupo primario distinto)
+  - `instalar.sh` / `actualizar.sh`: la ruta de configuración admite `TETRA_OLED_CONF` como variable de entorno, igual que ya hacía `tetra_oled.py`
+  - `tetra_oled.py`: las fuentes DejaVu ya no dependen de una única ruta de Debian/Raspberry Pi OS; se buscan también las carpetas habituales de Fedora y Arch, y se puede fijar otra con `TETRA_OLED_FONT_DIR`
+  - Auditados usuarios, rutas e IPs del resto del proyecto: ya no quedan fijos (el usuario, su carpeta personal, el nombre del servicio, la URL del monitor y el ISSI local ya se preguntaban o se leían de `/etc/tetra-oled.conf` desde versiones anteriores)
+
+---
+
 ## [3.5.0] - 2026-09-17
 
 ### Añadido
